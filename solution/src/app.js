@@ -4,11 +4,15 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const path = require('path');
+const { connectDB } = require('./config/db');
 
 const productsRouter = require('./routers/productsRouter');
+const categoriesRouter = require('./routers/categoriesRouter');
+const usersRouter = require('./routers/usersRouter');
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
+const MONGO_URI = process.env.MONGO_URI;
 
 app.use(helmet());
 app.use(cors({ origin: '*' }));
@@ -32,7 +36,10 @@ app.get('/health', (req, res) => {
 });
 
 app.get('/api', (req, res) => {
-  res.json({ message: 'Week 12 API — use /api/products for products' });
+  res.json({
+    message: 'Week 12 API',
+    resources: ['/products', '/categories', '/users'],
+  });
 });
 
 app.get('/api/error-demo', (req, res, next) => {
@@ -41,7 +48,9 @@ app.get('/api/error-demo', (req, res, next) => {
   next(err);
 });
 
-app.use('/api/products', productsRouter);
+app.use('/products', productsRouter);
+app.use('/categories', categoriesRouter);
+app.use('/users', usersRouter);
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Not found' });
@@ -55,6 +64,14 @@ app.use((err, req, res, _next) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server listening on http://localhost:${PORT}`);
+async function startServer() {
+  await connectDB(MONGO_URI);
+  app.listen(PORT, () => {
+    console.log(`Server listening on http://localhost:${PORT}`);
+  });
+}
+
+startServer().catch((error) => {
+  console.error('Failed to start server:', error.message);
+  process.exit(1);
 });
